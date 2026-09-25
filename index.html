@@ -1,86 +1,15 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Xác Nhận Suất Ăn Nhà Máy</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f6f9;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-        .card {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-        }
-        h2 {
-            color: #333;
-            margin-bottom: 20px;
-        }
-        input[type="text"] {
-            width: 100%;
-            padding: 12px;
-            font-size: 18px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            box-sizing: border-box;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        button {
-            width: 100%;
-            padding: 12px;
-            font-size: 18px;
-            background-color: #28a745;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        button:hover {
-            background-color: #218838;
-        }
-        #result {
-            margin-top: 20px;
-            font-size: 16px;
-            font-weight: bold;
-        }
-    </style>
-</head>
-<body>
-
-<div class="card">
-    <h2>🍽️ Xác Nhận Suất Ăn</h2>
-    <form id="mealForm">
-        <input type="text" id="MaNhanVien" name="MaNhanVien" placeholder="Nhập mã nhân viên" required autocomplete="off">
-        <button type="submit">Xác Nhận Nhận Cơm</button>
-    </form>
-    <div id="result"></div>
-</div>
-
 <script>
     const form = document.getElementById('mealForm');
     const resultDiv = document.getElementById('result');
 
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
-        const maNhanVien = document.getElementById('MaNhanVien').value;
+        const maNhanVien = document.getElementById('MaNhanVien').value.trim();
         resultDiv.style.color = '#555';
-        resultDiv.textContent = 'Đang xử lý, vui lòng đợi...';
+        resultDiv.textContent = `Đang xử lý cho nhân viên [${maNhanVien}]...`;
 
         try {
-            // THAY ĐƯỜNG DẪN WEBHOOK N8N CỦA BẠN VÀO DƯỚI ĐÂY
+            // Đường dẫn Webhook n8n của bạn qua Ngrok
             const webhookUrl = 'https://driver-encrypt-remake.ngrok-free.dev/webhook/nhan-suat-an';  
 
             const response = await fetch(webhookUrl, {
@@ -93,22 +22,25 @@
 
             const responseText = await response.text();
             
-            if (response.ok) {
-                resultDiv.style.color = '#28a745';
-                resultDiv.textContent = responseText;
+            // Hiển thị kết quả trả về từ n8n (kèm theo mã nhân viên để dễ phân biệt)
+            if (responseText.includes("thành công")) {
+                resultDiv.style.color = '#28a745'; // Màu xanh lá khi thành công
+                resultDiv.innerHTML = `✅ NV <b>${maNhanVien}</b>: ${responseText}`;
+            } else if (responseText.includes("trước đó")) {
+                resultDiv.style.color = '#ffc107'; // Màu vàng khi quét trùng
+                resultDiv.innerHTML = `⚠️ NV <b>${maNhanVien}</b>: ${responseText}`;
             } else {
-                resultDiv.style.color = '#dc3545';
-                resultDiv.textContent = responseText || 'Có lỗi xảy ra!';
+                resultDiv.style.color = '#dc3545'; // Màu đỏ khi chưa đăng ký hoặc lỗi
+                resultDiv.innerHTML = `❌ NV <b>${maNhanVien}</b>: ${responseText}`;
             }
+
         } catch (error) {
             resultDiv.style.color = '#dc3545';
-            resultDiv.textContent = 'Không thể kết nối đến hệ thống!';
+            resultDiv.textContent = '❌ Không thể kết nối đến hệ thống n8n!';
         }
 
-        // Xóa ô nhập sau khi gửi xong
+        // Xóa ô nhập mã sau khi gửi xong để quét tiếp nhân viên tiếp theo
         document.getElementById('MaNhanVien').value = '';
+        document.getElementById('MaNhanVien').focus();
     });
 </script>
-
-</body>
-</html>
