@@ -1,74 +1,3 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Xác Nhận Suất Ăn Nhà Máy</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f6f9;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-        .card {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-        }
-        h2 {
-            color: #333;
-            margin-bottom: 20px;
-        }
-        input[type="text"] {
-            width: 100%;
-            padding: 12px;
-            font-size: 18px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            box-sizing: border-box;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        button {
-            width: 100%;
-            padding: 12px;
-            font-size: 18px;
-            background-color: #28a745;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        button:hover {
-            background-color: #218838;
-        }
-        #result {
-            margin-top: 20px;
-            font-size: 18px;
-            font-weight: bold;
-        }
-    </style>
-</head>
-<body>
-
-<div class="card">
-    <h2>🍽️ Xác Nhận Suất Ăn</h2>
-    <form id="mealForm">
-        <input type="text" id="MaNhanVien" name="MaNhanVien" placeholder="Nhập mã nhân viên" required autocomplete="off">
-        <button type="submit">Xác Nhận Nhận Cơm</button>
-    </form>
-    <div id="result"></div>
-</div>
-
 <script>
     const form = document.getElementById('mealForm');
     const resultDiv = document.getElementById('result');
@@ -80,7 +9,6 @@
         resultDiv.textContent = 'Đang kiểm tra...';
 
         try {
-            // Thay bằng Production URL từ Webhook n8n của bạn
             const webhookUrl = 'https://driver-encrypt-remake.ngrok-free.dev/webhook/nhan-suat-an';  
 
             const response = await fetch(webhookUrl, {
@@ -93,13 +21,13 @@
 
             const responseText = await response.text();
             
-            // Kiểm tra kết quả trả về từ n8n
+            // Phân loại kết quả trả về từ n8n
             if (responseText.includes("Đã đăng ký thành công")) {
                 resultDiv.style.color = '#28a745'; // Xanh lá
-                resultDiv.textContent = `✅ Mã ${maNhanVien}: Đã đăng ký thành công`;
+                resultDiv.textContent = `✅ Mã ${maNhanVien}: Bạn đăng kí thành công`;
             } else {
                 resultDiv.style.color = '#dc3545'; // Đỏ
-                resultDiv.textContent = `❌ Mã ${maNhanVien}: Không thành công`;
+                resultDiv.textContent = `❌ Mã ${maNhanVien}: Bạn chưa đăng ký suất cơm`;
             }
 
         } catch (error) {
@@ -107,11 +35,7 @@
             resultDiv.textContent = '❌ Lỗi kết nối hệ thống!';
         }
 
-        // Reset ô nhập mã để quét tiếp người tiếp theo
         document.getElementById('MaNhanVien').value = '';
         document.getElementById('MaNhanVien').focus();
     });
 </script>
-
-</body>
-</html>
