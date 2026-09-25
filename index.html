@@ -1,14 +1,101 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xác Nhận Suất Ăn Nhà Máy</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            padding: 15px;
+        }
+        .card {
+            background: white;
+            padding: 30px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+        }
+        h2 {
+            color: #333;
+            margin-bottom: 25px;
+            font-size: 24px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            font-size: 20px;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus {
+            border-color: #28a745;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        #result {
+            margin-top: 25px;
+            font-size: 20px;
+            font-weight: bold;
+            min-height: 30px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>🍽️ Xác Nhận Suất Ăn</h2>
+    <form id="mealForm">
+        <input type="text" id="MaNhanVien" name="MaNhanVien" placeholder="Nhập mã nhân viên" required autocomplete="off" autofocus>
+        <button type="submit">Xác Nhận Nhận Cơm</button>
+    </form>
+    <div id="result"></div>
+</div>
+
 <script>
     const form = document.getElementById('mealForm');
     const resultDiv = document.getElementById('result');
+    const inputField = document.getElementById('MaNhanVien');
 
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
-        const maNhanVien = document.getElementById('MaNhanVien').value.trim();
+        const maNhanVien = inputField.value.trim();
+        
+        if (!maNhanVien) return;
+
         resultDiv.style.color = '#555';
         resultDiv.textContent = 'Đang kiểm tra...';
 
         try {
+            // URL Webhook ngrok của bạn trong n8n
             const webhookUrl = 'https://driver-encrypt-remake.ngrok-free.dev/webhook/nhan-suat-an';  
 
             const response = await fetch(webhookUrl, {
@@ -21,7 +108,7 @@
 
             const responseText = await response.text();
             
-            // So khớp với thông báo trả về từ Code Node n8n
+            // So khớp chính xác thông báo trả về từ n8n
             if (responseText.includes("Bạn đã đăng kí thành công")) {
                 resultDiv.style.color = '#28a745'; // Xanh lá
                 resultDiv.textContent = `✅ Mã ${maNhanVien}: Bạn đã đăng kí thành công`;
@@ -35,8 +122,11 @@
             resultDiv.textContent = '❌ Lỗi kết nối hệ thống!';
         }
 
-        // Tự động làm sạch ô input để quét tiếp người tiếp theo
-        document.getElementById('MaNhanVien').value = '';
-        document.getElementById('MaNhanVien').focus();
+        // Tự động xóa và đưa con trỏ về ô nhập để quét tiếp người sau
+        inputField.value = '';
+        inputField.focus();
     });
 </script>
+
+</body>
+</html>
