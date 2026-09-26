@@ -20,7 +20,7 @@
         }
         .card {
             background: white;
-            padding: 35px 25px;
+            padding: 40px 30px;
             border-radius: 16px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             width: 100%;
@@ -67,57 +67,47 @@
         }
         .input-group {
             position: relative;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         input[type="text"] {
             width: 100%;
-            padding: 16px;
-            font-size: 20px;
+            padding: 18px;
+            font-size: 22px;
             border: 2px solid #e0e0e0;
             border-radius: 10px;
             text-align: center;
             outline: none;
             transition: all 0.3s ease;
             background-color: #fafbfc;
+            letter-spacing: 1px;
         }
         input[type="text"]:focus {
             border-color: #27ae60;
             background-color: #fff;
-            box-shadow: 0 0 8px rgba(39, 174, 96, 0.2);
+            box-shadow: 0 0 10px rgba(39, 174, 96, 0.25);
         }
-        button {
-            width: 100%;
-            padding: 16px;
-            font-size: 18px;
-            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: bold;
-            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
-            transition: all 0.3s ease;
-        }
-        button:hover {
-            background: linear-gradient(135deg, #219653 0%, #27ae60 100%);
-            transform: translateY(-2px);
+        .instruction {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-bottom: 20px;
         }
         #result {
-            margin-top: 25px;
-            padding: 15px;
+            margin-top: 20px;
+            padding: 18px;
             border-radius: 10px;
-            font-size: 17px;
+            font-size: 18px;
             font-weight: 600;
-            min-height: 50px;
+            min-height: 60px;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             gap: 6px;
+            transition: all 0.3s ease;
         }
         .time-text {
             font-size: 14px;
-            color: #7f8c8d;
+            color: #555;
             font-weight: normal;
         }
     </style>
@@ -125,82 +115,92 @@
 <body>
 
 <div class="card">
-    <!-- Phần Logo Sinaran kết hợp Icon Nhân viên sinh động -->
     <div class="header-section">
-        <div class="avatar-icon" title="Nhân viên quét mã">👨‍💼</div>
+        <div class="avatar-icon" title="Quét mã nhân viên">📷</div>
         <div class="brand-name">Sinaran VN</div>
     </div>
 
     <h2>🍽️ Xác Nhận Suất Ăn Nhà Máy</h2>
     
-    <form id="mealForm">
-        <div class="input-group">
-            <input type="text" id="MaNhanVien" name="MaNhanVien" placeholder="Nhập mã nhân viên" required autocomplete="off" autofocus>
-        </div>
-        <button type="submit">Xác Nhận</button>
-    </form>
+    <div class="instruction">Vui lòng quét mã QR nhân viên vào ô bên dưới</div>
+
+    <div class="input-group">
+        <input type="text" id="MaNhanVien" placeholder="Đang chờ quét mã..." autocomplete="off" autofocus>
+    </div>
     
-    <div id="result"></div>
+    <div id="result" style="background-color: #f1f2f6; color: #7f8c8d;">
+        <span>⚡ Hệ thống sẵn sàng nhận mã quét</span>
+    </div>
 </div>
 
 <script>
-    const form = document.getElementById('mealForm');
-    const resultDiv = document.getElementById('result');
     const inputField = document.getElementById('MaNhanVien');
+    const resultDiv = document.getElementById('result');
 
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const maNhanVien = inputField.value.trim();
-        
-        if (!maNhanVien) return;
+    // Luôn giữ focus vào ô input ngay cả khi bấm linh tinh trên màn hình
+    document.addEventListener('click', () => {
+        inputField.focus();
+    });
 
-        // Lấy thời gian thực tế ngay khi quét mã
-        const now = new Date();
-        const timeString = now.toLocaleTimeString('vi-VN');
-        const dateString = now.toLocaleDateString('vi-VN');
-        const fullTime = `${timeString} ngày ${dateString}`;
-
-        resultDiv.style.backgroundColor = '#f1f2f6';
-        resultDiv.style.color = '#555';
-        resultDiv.innerHTML = `<span>⏳ Đang kiểm tra...</span>`;
-
-        try {
-            const webhookUrl = 'https://driver-encrypt-remake.ngrok-free.dev/webhook/nhan-suat-an';  
-
-            const response = await fetch(webhookUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ MaNhanVien: maNhanVien })
-            });
-
-            const responseText = await response.text();
+    // Lắng nghe sự kiện nhấn phím từ máy quét QR (hoặc bàn phím)
+    inputField.addEventListener('keydown', async function(e) {
+        // Khi máy quét QR truyền xong dữ liệu, nó sẽ tự động gửi kèm phím 'Enter'
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const maNhanVien = inputField.value.trim();
             
-            if (responseText.includes("Bạn đã đăng kí thành công")) {
-                resultDiv.style.backgroundColor = '#e8f8f5';
-                resultDiv.style.color = '#27ae60'; 
-                resultDiv.innerHTML = `
-                    <div>✅ Mã ${maNhanVien}: Bạn đã đăng kí thành công</div>
-                    <div class="time-text">🕒 Thời gian: ${fullTime}</div>
-                `;
-            } else {
+            if (!maNhanVien) return;
+
+            // Lấy thời gian thực tế ngay khi quét
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('vi-VN');
+            const dateString = now.toLocaleDateString('vi-VN');
+            const fullTime = `${timeString} ngày ${dateString}`;
+
+            // Hiển thị trạng thái đang xử lý
+            resultDiv.style.backgroundColor = '#fff3cd';
+            resultDiv.style.color = '#856404';
+            resultDiv.innerHTML = `<span>⏳ Đang kiểm tra mã ${maNhanVien}...</span>`;
+
+            try {
+                const webhookUrl = 'https://driver-encrypt-remake.ngrok-free.dev/webhook/nhan-suat-an';  
+
+                const response = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ MaNhanVien: maNhanVien })
+                });
+
+                const responseText = await response.text();
+                
+                if (responseText.includes("Bạn đã đăng kí thành công")) {
+                    resultDiv.style.backgroundColor = '#e8f8f5';
+                    resultDiv.style.color = '#27ae60'; 
+                    resultDiv.innerHTML = `
+                        <div>✅ Mã ${maNhanVien}: Đăng kí thành công!</div>
+                        <div class="time-text">🕒 Thời gian: ${fullTime}</div>
+                    `;
+                } else {
+                    resultDiv.style.backgroundColor = '#fdedec';
+                    resultDiv.style.color = '#c0392b'; 
+                    resultDiv.innerHTML = `
+                        <div>❌ Mã ${maNhanVien}: Chưa đăng kí suất cơm!</div>
+                        <div class="time-text">🕒 Thời gian: ${fullTime}</div>
+                    `;
+                }
+
+            } catch (error) {
                 resultDiv.style.backgroundColor = '#fdedec';
-                resultDiv.style.color = '#c0392b'; 
-                resultDiv.innerHTML = `
-                    <div>❌ Mã ${maNhanVien}: Bạn chưa đăng kí suất cơm</div>
-                    <div class="time-text">🕒 Thời gian: ${fullTime}</div>
-                `;
+                resultDiv.style.color = '#c0392b';
+                resultDiv.innerHTML = `<div>❌ Lỗi kết nối hệ thống!</div>`;
             }
 
-        } catch (error) {
-            resultDiv.style.backgroundColor = '#fdedec';
-            resultDiv.style.color = '#c0392b';
-            resultDiv.textContent = '❌ Lỗi kết nối hệ thống!';
+            // Xóa trắng ô input và chuẩn bị cho lượt quét tiếp theo ngay lập tức
+            inputField.value = '';
+            inputField.focus();
         }
-
-        inputField.value = '';
-        inputField.focus();
     });
 </script>
 
