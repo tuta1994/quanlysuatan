@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Xác Nhận Suất Ăn Nhà Máy</title>
+    <title>Xác Nhận Suất Ăn Nhà Máy - Sinaran</title>
     <style>
         * {
             box-sizing: border-box;
         }
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f6f9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -20,63 +20,107 @@
         }
         .card {
             background: white;
-            padding: 30px 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            padding: 35px 25px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             width: 100%;
             max-width: 450px;
             text-align: center;
+            transition: all 0.3s ease;
+        }
+        .logo-container {
+            margin-bottom: 20px;
+        }
+        .logo-container img {
+            max-width: 160px;
+            height: auto;
+            object-fit: contain;
         }
         h2 {
-            color: #333;
+            color: #2c3e50;
             margin-bottom: 25px;
-            font-size: 24px;
+            font-size: 22px;
+            font-weight: 700;
+        }
+        .input-group {
+            position: relative;
+            margin-bottom: 20px;
         }
         input[type="text"] {
             width: 100%;
-            padding: 15px;
+            padding: 16px;
             font-size: 20px;
-            border: 2px solid #ccc;
-            border-radius: 8px;
-            margin-bottom: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
             text-align: center;
             outline: none;
-            transition: border-color 0.3s;
+            transition: all 0.3s ease;
+            background-color: #fafbfc;
         }
         input[type="text"]:focus {
-            border-color: #28a745;
+            border-color: #27ae60;
+            background-color: #fff;
+            box-shadow: 0 0 8px rgba(39, 174, 96, 0.2);
         }
         button {
             width: 100%;
-            padding: 15px;
+            padding: 16px;
             font-size: 18px;
-            background-color: #28a745;
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             cursor: pointer;
             font-weight: bold;
-            transition: background-color 0.3s;
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+            transition: all 0.3s ease;
         }
         button:hover {
-            background-color: #218838;
+            background: linear-gradient(135deg, #219653 0%, #27ae60 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(39, 174, 96, 0.4);
+        }
+        button:active {
+            transform: translateY(0);
         }
         #result {
             margin-top: 25px;
-            font-size: 20px;
-            font-weight: bold;
-            min-height: 30px;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 17px;
+            font-weight: 600;
+            min-height: 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s ease;
+        }
+        .time-text {
+            font-size: 14px;
+            color: #7f8c8d;
+            font-weight: normal;
         }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>🍽️ Xác Nhận Suất Ăn</h2>
+    <!-- Phần hiển thị Logo Sinaran -->
+    <div class="logo-container">
+        <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 80'><text x='10' y='55' font-family='serif' font-size='40' font-style='italic' font-weight='bold' fill='%232c3e50'>Sinaran</text></svg>" alt="Sinaran Logo" id="brandLogo">
+    </div>
+
+    <h2>🍽️ Xác Nhận Suất Ăn Nhà Máy</h2>
+    
     <form id="mealForm">
-        <input type="text" id="MaNhanVien" name="MaNhanVien" placeholder="Nhập mã nhân viên" required autocomplete="off" autofocus>
+        <div class="input-group">
+            <input type="text" id="MaNhanVien" name="MaNhanVien" placeholder="Nhập mã nhân viên" required autocomplete="off" autofocus>
+        </div>
         <button type="submit">Xác Nhận Nhận Cơm</button>
     </form>
+    
     <div id="result"></div>
 </div>
 
@@ -91,8 +135,15 @@
         
         if (!maNhanVien) return;
 
+        // Lấy thời gian thực tế ngay tại thời điểm quét/nhập mã
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('vi-VN');
+        const dateString = now.toLocaleDateString('vi-VN');
+        const fullTime = `${timeString} ngày ${dateString}`;
+
+        resultDiv.style.backgroundColor = '#f1f2f6';
         resultDiv.style.color = '#555';
-        resultDiv.textContent = 'Đang kiểm tra...';
+        resultDiv.innerHTML = `<span>⏳ Đang kiểm tra...</span>`;
 
         try {
             // URL Webhook ngrok của bạn trong n8n
@@ -101,24 +152,34 @@
             const response = await fetch(webhookUrl, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
                 },
                 body: JSON.stringify({ MaNhanVien: maNhanVien })
             });
 
             const responseText = await response.text();
             
-            // So khớp chính xác thông báo trả về từ n8n
+            // So khớp chính xác thông báo trả về từ n8n và bổ sung hiệu ứng màu sắc nổi bật, kèm thời gian
             if (responseText.includes("Bạn đã đăng kí thành công")) {
-                resultDiv.style.color = '#28a745'; // Xanh lá
-                resultDiv.textContent = `✅ Mã ${maNhanVien}: Bạn đã đăng kí thành công`;
+                resultDiv.style.backgroundColor = '#e8f8f5';
+                resultDiv.style.color = '#27ae60'; 
+                resultDiv.innerHTML = `
+                    <div>✅ Mã ${maNhanVien}: Bạn đã đăng kí thành công</div>
+                    <div class="time-text">🕒 Thời gian: ${fullTime}</div>
+                `;
             } else {
-                resultDiv.style.color = '#dc3545'; // Đỏ
-                resultDiv.textContent = `❌ Mã ${maNhanVien}: Bạn chưa đăng kí suất cơm`;
+                resultDiv.style.backgroundColor = '#fdedec';
+                resultDiv.style.color = '#c0392b'; 
+                resultDiv.innerHTML = `
+                    <div>❌ Mã ${maNhanVien}: Bạn chưa đăng kí suất cơm</div>
+                    <div class="time-text">🕒 Thời gian: ${fullTime}</div>
+                `;
             }
 
         } catch (error) {
-            resultDiv.style.color = '#dc3545';
+            resultDiv.style.backgroundColor = '#fdedec';
+            resultDiv.style.color = '#c0392b';
             resultDiv.textContent = '❌ Lỗi kết nối hệ thống!';
         }
 
