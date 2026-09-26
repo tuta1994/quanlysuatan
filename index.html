@@ -80,7 +80,7 @@
         resultDiv.textContent = 'Đang kiểm tra...';
 
         try {
-            // Thay bằng Production URL từ Webhook n8n của bạn
+            // Đảm bảo đúng URL Webhook của bạn
             const webhookUrl = 'https://driver-encrypt-remake.ngrok-free.dev/webhook/nhan-suat-an';  
 
             const response = await fetch(webhookUrl, {
@@ -93,13 +93,12 @@
 
             const responseText = await response.text();
             
-            // Xử lý hiển thị trực tiếp kết quả trả về từ n8n
             if (responseText.includes("Đã đăng ký thành công")) {
-                resultDiv.style.color = '#28a745'; // Màu xanh lá
-                resultDiv.textContent = `✅ Mã ${maNhanVien}: Bạn đăng kí thành công`;
+                resultDiv.style.color = '#28a745'; 
+                resultDiv.textContent = `✅ Mã ${maNhanVien}: Đã đăng ký thành công`;
             } else {
-                resultDiv.style.color = '#dc3545'; // Màu đỏ
-                resultDiv.textContent = `❌ Mã ${maNhanVien}: Bạn chưa đăng ký suất ăn`;
+                resultDiv.style.color = '#dc3545'; 
+                resultDiv.textContent = `❌ Mã ${maNhanVien}: Bạn chưa đăng ký suất cơm`;
             }
 
         } catch (error) {
@@ -107,7 +106,6 @@
             resultDiv.textContent = '❌ Lỗi kết nối hệ thống!';
         }
 
-        // Reset ô nhập mã để sẵn sàng quét tiếp mã tiếp theo
         document.getElementById('MaNhanVien').value = '';
         document.getElementById('MaNhanVien').focus();
     });
