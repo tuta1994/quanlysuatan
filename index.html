@@ -1,132 +1,43 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Xác Nhận Suất Ăn Nhà Máy</title>
-    <style>
-        * {
-            box-sizing: border-box;
-        }
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f6f9;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            padding: 15px;
-        }
-        .card {
-            background: white;
-            padding: 30px 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 450px;
-            text-align: center;
-        }
-        h2 {
-            color: #333;
-            margin-bottom: 25px;
-            font-size: 24px;
-        }
-        input[type="text"] {
-            width: 100%;
-            padding: 15px;
-            font-size: 20px;
-            border: 2px solid #ccc;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            text-align: center;
-            outline: none;
-            transition: border-color 0.3s;
-        }
-        input[type="text"]:focus {
-            border-color: #28a745;
-        }
-        button {
-            width: 100%;
-            padding: 15px;
-            font-size: 18px;
-            background-color: #28a745;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background-color 0.3s;
-        }
-        button:hover {
-            background-color: #218838;
-        }
-        #result {
-            margin-top: 25px;
-            font-size: 20px;
-            font-weight: bold;
-            min-height: 30px;
-        }
-    </style>
-</head>
-<body>
+// 1. Lấy mã nhân viên vừa nhập từ Webhook
+const webhookData = $('Webhook').first().json;
+const maNhanVienMoi = String(webhookData.body ? webhookData.body.MaNhanVien : webhookData.MaNhanVien).trim();
 
-<div class="card">
-    <h2>🍽️ Xác Nhận Suất Ăn</h2>
-    <form id="mealForm">
-        <input type="text" id="MaNhanVien" name="MaNhanVien" placeholder="Nhập mã nhân viên" required autocomplete="off" autofocus>
-        <button type="submit">Xác Nhận Nhận Cơm</button>
-    </form>
-    <div id="result"></div>
-</div>
+// 2. Lấy toàn bộ danh sách từ node đọc Google Sheets ("DS đã đăng kí")
+const danhSachDangKy = $('DS đã đăng kí').all();
 
-<script>
-    const form = document.getElementById('mealForm');
-    const resultDiv = document.getElementById('result');
-    const inputField = document.getElementById('MaNhanVien');
+let tonTai = false;
 
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const maNhanVien = inputField.value.trim();
-        
-        if (!maNhanVien) return;
-
-        resultDiv.style.color = '#555';
-        resultDiv.textContent = 'Đang kiểm tra...';
-
-        try {
-            // URL Webhook ngrok của bạn trong n8n
-            const webhookUrl = 'https://driver-encrypt-remake.ngrok-free.dev/webhook/nhan-suat-an';  
-
-            const response = await fetch(webhookUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ MaNhanVien: maNhanVien })
-            });
-
-            const responseText = await response.text();
-            
-            // So khớp chính xác thông báo trả về từ n8n
-            if (responseText.includes("Bạn đã đăng kí thành công")) {
-                resultDiv.style.color = '#28a745'; // Xanh lá
-                resultDiv.textContent = `✅ Mã ${maNhanVien}: Bạn đã đăng kí thành công`;
-            } else {
-                resultDiv.style.color = '#dc3545'; // Đỏ
-                resultDiv.textContent = `❌ Mã ${maNhanVien}: Bạn chưa đăng kí suất cơm`;
-            }
-
-        } catch (error) {
-            resultDiv.style.color = '#dc3545';
-            resultDiv.textContent = '❌ Lỗi kết nối hệ thống!';
+// 3. Duyệt qua danh sách và so sánh trực tiếp với cột 'Manhanviendangki'
+for (let item of danhSachDangKy) {
+    const giaTriDangKy = item.json.Manhanviendangki || item.json.MaNhanViendadangki;
+    
+    if (giaTriDangKy !== undefined && giaTriDangKy !== null) {
+        if (String(giaTriDangKy).trim() === maNhanVienMoi) {
+            tonTai = true;
+            break; // Trùng khớp thì dừng vòng lặp
         }
+    }
+}
 
-        // Tự động xóa và đưa con trỏ về ô nhập để quét tiếp người sau
-        inputField.value = '';
-        inputField.focus();
-    });
-</script>
+// 4. Lấy thời gian hiện tại chuẩn định dạng Việt Nam
+const now = new Date();
+const timeString = now.toLocaleTimeString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+const dateString = now.toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+const thoiGianHienTai = `${timeString} ngày ${dateString}`;
 
-</body>
-</html>
+// 5. Trả về kết quả JSON chứa cả thông báo và thời gian để HTML dễ dàng xử lý
+if (tonTai) {
+    return [{
+        json: {
+            message: "Bạn đã đăng kí thành công",
+            thoiGian: thoiGianHienTai
+        }
+    }];
+} else {
+    return [{
+        json: {
+            message: "Bạn chưa đăng kí suất cơm",
+            thoiGian: thoiGianHienTai
+        }
+    }];
+}
