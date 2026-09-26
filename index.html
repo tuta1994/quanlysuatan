@@ -1,43 +1,149 @@
-// 1. Lấy mã nhân viên vừa nhập từ Webhook
-const webhookData = $('Webhook').first().json;
-const maNhanVienMoi = String(webhookData.body ? webhookData.body.MaNhanVien : webhookData.MaNhanVien).trim();
-
-// 2. Lấy toàn bộ danh sách từ node đọc Google Sheets ("DS đã đăng kí")
-const danhSachDangKy = $('DS đã đăng kí').all();
-
-let tonTai = false;
-
-// 3. Duyệt qua danh sách và so sánh trực tiếp với cột 'Manhanviendangki'
-for (let item of danhSachDangKy) {
-    const giaTriDangKy = item.json.Manhanviendangki || item.json.MaNhanViendadangki;
-    
-    if (giaTriDangKy !== undefined && giaTriDangKy !== null) {
-        if (String(giaTriDangKy).trim() === maNhanVienMoi) {
-            tonTai = true;
-            break; // Trùng khớp thì dừng vòng lặp
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xác Nhận Suất Ăn Nhà Máy</title>
+    <style>
+        * {
+            box-sizing: border-box;
         }
-    }
-}
-
-// 4. Lấy thời gian hiện tại chuẩn định dạng Việt Nam
-const now = new Date();
-const timeString = now.toLocaleTimeString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
-const dateString = now.toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
-const thoiGianHienTai = `${timeString} ngày ${dateString}`;
-
-// 5. Trả về kết quả JSON chứa cả thông báo và thời gian để HTML dễ dàng xử lý
-if (tonTai) {
-    return [{
-        json: {
-            message: "Bạn đã đăng kí thành công",
-            thoiGian: thoiGianHienTai
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            padding: 15px;
         }
-    }];
-} else {
-    return [{
-        json: {
-            message: "Bạn chưa đăng kí suất cơm",
-            thoiGian: thoiGianHienTai
+        .card {
+            background: white;
+            padding: 30px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
         }
-    }];
-}
+        h2 {
+            color: #333;
+            margin-bottom: 25px;
+            font-size: 24px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            font-size: 20px;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus {
+            border-color: #28a745;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        #result {
+            margin-top: 25px;
+            font-size: 18px;
+            font-weight: bold;
+            min-height: 30px;
+            line-height: 1.5;
+        }
+        .time-text {
+            font-size: 14px;
+            color: #666;
+            font-weight: normal;
+            margin-top: 5px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>🍽️ Xác Nhận Suất Ăn</h2>
+    <form id="mealForm">
+        <input type="text" id="MaNhanVien" name="MaNhanVien" placeholder="Nhập mã nhân viên" required autocomplete="off" autofocus>
+        <button type="submit">Xác Nhận Nhận Cơm</button>
+    </form>
+    <div id="result"></div>
+</div>
+
+<script>
+    const form = document.getElementById('mealForm');
+    const resultDiv = document.getElementById('result');
+    const inputField = document.getElementById('MaNhanVien');
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const maNhanVien = inputField.value.trim();
+        
+        if (!maNhanVien) return;
+
+        resultDiv.style.color = '#555';
+        resultDiv.textContent = 'Đang kiểm tra...';
+
+        try {
+            // URL Webhook ngrok của bạn trong n8n
+            const webhookUrl = 'https://driver-encrypt-remake.ngrok-free.dev/webhook/nhan-suat-an';  
+
+            const response = await fetch(webhookUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ MaNhanVien: maNhanVien })
+            });
+
+            // Lấy dữ liệu trả về dưới dạng JSON từ n8n
+            const data = await response.json();
+            
+            // Xử lý linh hoạt dữ liệu lấy từ n8n (hoặc tự tạo nếu thiếu)
+            const message = data.message || "Không nhận được phản hồi";
+            
+            // Lấy thời gian từ n8n, nếu n8n chưa có thì lấy thời gian thực tại trình duyệt
+            const now = new Date();
+            const fallbackTime = `${now.toLocaleTimeString('vi-VN')} ngày ${now.toLocaleDateString('vi-VN')}`;
+            const thoiGian = data.thoiGian || fallbackTime;
+
+            // Kiểm tra thông điệp để phân biệt màu sắc và icon hiển thị
+            if (message.includes("thành công")) {
+                resultDiv.style.color = '#28a745'; // Xanh lá
+                resultDiv.innerHTML = `✅ Mã ${maNhanVien}: ${message}<br><span class="time-text">🕒 Thời gian: ${thoiGian}</span>`;
+            } else {
+                resultDiv.style.color = '#dc3545'; // Đỏ
+                resultDiv.innerHTML = `❌ Mã ${maNhanVien}: ${message}<br><span class="time-text">🕒 Thời gian: ${thoiGian}</span>`;
+            }
+
+        } catch (error) {
+            resultDiv.style.color = '#dc3545';
+            resultDiv.textContent = '❌ Lỗi kết nối hệ thống!';
+        }
+
+        // Tự động xóa và đưa con trỏ về ô nhập để sẵn sàng quét người tiếp theo
+        inputField.value = '';
+        inputField.focus();
+    });
+</script>
+
+</body>
+</html>
