@@ -68,6 +68,13 @@
             min-height: 30px;
             line-height: 1.5;
         }
+        .time-text {
+            font-size: 14px;
+            color: #666;
+            font-weight: normal;
+            margin-top: 5px;
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
@@ -92,6 +99,12 @@
         
         if (!maNhanVien) return;
 
+        // 1. Lấy thời gian ngay tại thời điểm nhập mã / bấm xác nhận
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('vi-VN');
+        const dateString = now.toLocaleDateString('vi-VN');
+        const fullTime = `${timeString} ngày ${dateString}`;
+
         resultDiv.style.color = '#555';
         resultDiv.textContent = 'Đang kiểm tra...';
 
@@ -107,25 +120,30 @@
                 body: JSON.stringify({ MaNhanVien: maNhanVien })
             });
 
-            const data = await response.json();
-            const messageFromServer = data.message || "";
-            
-            // Đặt màu chữ dựa theo kết quả trả về từ n8n
-            if (messageFromServer.includes("đã đăng kí thành công")) {
-                resultDiv.style.color = '#28a745'; // Xanh lá
-            } else {
-                resultDiv.style.color = '#dc3545'; // Đỏ
+            // 2. Đọc kết quả trả về từ n8n (hỗ trợ cả dạng JSON hoặc Text)
+            let responseText = "";
+            try {
+                const data = await response.json();
+                responseText = data.message || JSON.stringify(data);
+            } catch (err) {
+                responseText = await response.text();
             }
             
-            // Hiển thị trực tiếp nội dung HTML đã kèm thời gian từ n8n
-            resultDiv.innerHTML = messageFromServer;
+            // 3. So khớp thông báo và hiển thị kết quả kèm theo thời gian lên màn hình
+            if (responseText.includes("đã đăng kí thành công") || responseText.includes("thành công")) {
+                resultDiv.style.color = '#28a745'; // Xanh lá
+                resultDiv.innerHTML = `✅ Mã ${maNhanVien}: Bạn đã đăng kí thành công<br><span class="time-text">🕒 Thời gian: ${fullTime}</span>`;
+            } else {
+                resultDiv.style.color = '#dc3545'; // Đỏ
+                resultDiv.innerHTML = `❌ Mã ${maNhanVien}: Bạn chưa đăng kí suất cơm<br><span class="time-text">🕒 Thời gian: ${fullTime}</span>`;
+            }
 
         } catch (error) {
             resultDiv.style.color = '#dc3545';
             resultDiv.textContent = '❌ Lỗi kết nối hệ thống!';
         }
 
-        // Tự động xóa và đưa con trỏ về ô nhập để sẵn sàng quét người tiếp theo
+        // Tự động xóa và đưa con trỏ về ô nhập để quét tiếp người sau
         inputField.value = '';
         inputField.focus();
     });
