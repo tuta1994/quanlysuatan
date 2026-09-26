@@ -68,12 +68,6 @@
             min-height: 30px;
             line-height: 1.5;
         }
-        .time-text {
-            font-size: 14px;
-            color: #666;
-            font-weight: normal;
-            margin-top: 5px;
-        }
     </style>
 </head>
 <body>
@@ -113,41 +107,25 @@
                 body: JSON.stringify({ MaNhanVien: maNhanVien })
             });
 
-            // Lấy thời gian thực tế ngay tại thời điểm nhận phản hồi từ hệ thống
-            const now = new Date();
-            const timeString = now.toLocaleTimeString('vi-VN');
-            const dateString = now.toLocaleDateString('vi-VN');
-            const fullTime = `${timeString} ngày ${dateString}`;
-
-            // Cố gắng đọc dưới dạng JSON nếu n8n trả về cấu trúc JSON, nếu không sẽ đọc dạng text
-            let responseText = "";
-            let serverTime = fullTime;
-
-            try {
-                const data = await response.json();
-                responseText = data.message || JSON.stringify(data);
-                if (data.thoiGian) {
-                    serverTime = data.thoiGian; // Ưu tiên thời gian chuẩn từ n8n nếu có
-                }
-            } catch (err) {
-                responseText = await response.text();
-            }
+            const data = await response.json();
+            const messageFromServer = data.message || "";
             
-            // So khớp thông báo trả về từ n8n
-            if (responseText.includes("Bạn đã đăng kí thành công")) {
+            // Đặt màu chữ dựa theo kết quả trả về từ n8n
+            if (messageFromServer.includes("đã đăng kí thành công")) {
                 resultDiv.style.color = '#28a745'; // Xanh lá
-                resultDiv.innerHTML = `✅ Mã ${maNhanVien}: Bạn đã đăng kí thành công<br><span class="time-text">🕒 Thời gian: ${serverTime}</span>`;
             } else {
                 resultDiv.style.color = '#dc3545'; // Đỏ
-                resultDiv.innerHTML = `❌ Mã ${maNhanVien}: Bạn chưa đăng kí suất cơm<br><span class="time-text">🕒 Thời gian: ${serverTime}</span>`;
             }
+            
+            // Hiển thị trực tiếp nội dung HTML đã kèm thời gian từ n8n
+            resultDiv.innerHTML = messageFromServer;
 
         } catch (error) {
             resultDiv.style.color = '#dc3545';
             resultDiv.textContent = '❌ Lỗi kết nối hệ thống!';
         }
 
-        // Tự động xóa và đưa con trỏ về ô nhập để quét tiếp người sau
+        // Tự động xóa và đưa con trỏ về ô nhập để sẵn sàng quét người tiếp theo
         inputField.value = '';
         inputField.focus();
     });
