@@ -63,9 +63,16 @@
         }
         #result {
             margin-top: 25px;
-            font-size: 20px;
+            font-size: 18px;
             font-weight: bold;
             min-height: 30px;
+            line-height: 1.5;
+        }
+        .time-text {
+            font-size: 14px;
+            color: #666;
+            font-weight: normal;
+            margin-top: 5px;
         }
     </style>
 </head>
@@ -108,13 +115,19 @@
 
             const responseText = await response.text();
             
+            // Lấy thời gian hiện tại tại thiết bị
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('vi-VN');
+            const dateString = now.toLocaleDateString('vi-VN');
+            const fullTime = `${timeString} ngày ${dateString}`;
+            
             // So khớp chính xác thông báo trả về từ n8n
             if (responseText.includes("Bạn đã đăng kí thành công")) {
                 resultDiv.style.color = '#28a745'; // Xanh lá
-                resultDiv.textContent = `✅ Mã ${maNhanVien}: Bạn đã đăng kí thành công`;
+                resultDiv.innerHTML = `✅ Mã ${maNhanVien}: Bạn đã đăng kí thành công<br><span class="time-text">🕒 Thời gian: ${fullTime}</span>`;
             } else {
                 resultDiv.style.color = '#dc3545'; // Đỏ
-                resultDiv.textContent = `❌ Mã ${maNhanVien}: Bạn chưa đăng kí suất cơm`;
+                resultDiv.innerHTML = `❌ Mã ${maNhanVien}: Bạn chưa đăng kí suất cơm<br><span class="time-text">🕒 Thời gian: ${fullTime}</span>`;
             }
 
         } catch (error) {
