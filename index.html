@@ -1,146 +1,41 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Xác Nhận Suất Ăn Nhà Máy</title>
-    <style>
-        * {
-            box-sizing: border-box;
-        }
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f6f9;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            padding: 15px;
-        }
-        .card {
-            background: white;
-            padding: 30px 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 450px;
-            text-align: center;
-        }
-        h2 {
-            color: #333;
-            margin-bottom: 25px;
-            font-size: 24px;
-        }
-        input[type="text"] {
-            width: 100%;
-            padding: 15px;
-            font-size: 20px;
-            border: 2px solid #ccc;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            text-align: center;
-            outline: none;
-            transition: border-color 0.3s;
-        }
-        input[type="text"]:focus {
-            border-color: #28a745;
-        }
-        button {
-            width: 100%;
-            padding: 15px;
-            font-size: 18px;
-            background-color: #28a745;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background-color 0.3s;
-        }
-        button:hover {
-            background-color: #218838;
-        }
-        #result {
-            margin-top: 25px;
-            font-size: 18px;
-            font-weight: bold;
-            min-height: 30px;
-            line-height: 1.5;
-        }
-        .time-text {
-            font-size: 14px;
-            color: #666;
-            font-weight: normal;
-            margin-top: 5px;
-            display: inline-block;
-        }
-    </style>
-</head>
-<body>
-
-<div class="card">
-    <h2>🍽️ Xác Nhận Suất Ăn</h2>
-    <form id="mealForm">
-        <input type="text" id="MaNhanVien" name="MaNhanVien" placeholder="Nhập mã nhân viên" required autocomplete="off" autofocus>
-        <button type="submit">Xác Nhận Nhận Cơm</button>
-    </form>
-    <div id="result"></div>
-</div>
-
 <script>
     const form = document.getElementById('mealForm');
     const resultDiv = document.getElementById('result');
-    const inputField = document.getElementById('MaNhanVien');
 
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
-        const maNhanVien = inputField.value.trim();
-        
-        if (!maNhanVien) return;
-
+        const maNhanVien = document.getElementById('MaNhanVien').value.trim();
         resultDiv.style.color = '#555';
         resultDiv.textContent = 'Đang kiểm tra...';
 
         try {
-            // URL Webhook ngrok của bạn trong n8n
             const webhookUrl = 'https://driver-encrypt-remake.ngrok-free.dev/webhook/nhan-suat-an';  
 
             const response = await fetch(webhookUrl, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'ngrok-skip-browser-warning': 'true' // Quan trọng: Giúp bỏ qua trang cảnh báo của ngrok
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ MaNhanVien: maNhanVien })
             });
 
-            // Lấy dữ liệu JSON trả về từ n8n
-            const data = await response.json();
+            const responseText = await response.text();
             
-            const message = data.message || "Không nhận được phản hồi";
-            const thoiGian = data.thoiGian || "";
-
-            // Phân loại kết quả hiển thị dựa theo thông điệp từ n8n
-            if (message.includes("thành công")) {
+            // Phân loại kết quả trả về từ n8n
+            if (responseText.includes("Đã đăng ký thành công")) {
                 resultDiv.style.color = '#28a745'; // Xanh lá
-                resultDiv.innerHTML = `✅ Mã ${maNhanVien}: ${message}<br><span class="time-text">🕒 Thời gian: ${thoiGian}</span>`;
+                resultDiv.textContent = `✅ Mã ${maNhanVien}: Bạn đăng kí thành công`;
             } else {
                 resultDiv.style.color = '#dc3545'; // Đỏ
-                resultDiv.innerHTML = `❌ Mã ${maNhanVien}: ${message}<br><span class="time-text">🕒 Thời gian: ${thoiGian}</span>`;
+                resultDiv.textContent = `❌ Mã ${maNhanVien}: Bạn chưa đăng ký suất cơm`;
             }
 
         } catch (error) {
-            console.error(error);
             resultDiv.style.color = '#dc3545';
             resultDiv.textContent = '❌ Lỗi kết nối hệ thống!';
         }
 
-        // Tự động xóa và đưa con trỏ về ô nhập để quét tiếp người sau
-        inputField.value = '';
-        inputField.focus();
+        document.getElementById('MaNhanVien').value = '';
+        document.getElementById('MaNhanVien').focus();
     });
 </script>
-
-</body>
-</html>
