@@ -95,9 +95,9 @@
             margin-top: 20px;
             padding: 18px;
             border-radius: 10px;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
-            min-height: 60px;
+            min-height: 70px;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -106,9 +106,13 @@
             transition: all 0.3s ease;
         }
         .time-text {
-            font-size: 14px;
+            font-size: 13px;
             color: #555;
             font-weight: normal;
+        }
+        .emp-name {
+            font-size: 18px;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -137,27 +141,19 @@
     const inputField = document.getElementById('MaNhanVien');
     const resultDiv = document.getElementById('result');
 
-    // Luôn giữ focus vào ô input ngay cả khi bấm linh tinh trên màn hình
+    // Luôn giữ focus vào ô input
     document.addEventListener('click', () => {
         inputField.focus();
     });
 
-    // Lắng nghe sự kiện nhấn phím từ máy quét QR (hoặc bàn phím)
     inputField.addEventListener('keydown', async function(e) {
-        // Khi máy quét QR truyền xong dữ liệu, nó sẽ tự động gửi kèm phím 'Enter'
         if (e.key === 'Enter') {
             e.preventDefault();
             const maNhanVien = inputField.value.trim();
             
             if (!maNhanVien) return;
 
-            // Lấy thời gian thực tế ngay khi quét
-            const now = new Date();
-            const timeString = now.toLocaleTimeString('vi-VN');
-            const dateString = now.toLocaleDateString('vi-VN');
-            const fullTime = `${timeString} ngày ${dateString}`;
-
-            // Hiển thị trạng thái đang xử lý
+            // Hiển thị trạng thái đang kiểm tra
             resultDiv.style.backgroundColor = '#fff3cd';
             resultDiv.style.color = '#856404';
             resultDiv.innerHTML = `<span>⏳ Đang kiểm tra mã ${maNhanVien}...</span>`;
@@ -173,21 +169,24 @@
                     body: JSON.stringify({ MaNhanVien: maNhanVien })
                 });
 
-                const responseText = await response.text();
+                // Đọc dữ liệu JSON trả về từ n8n
+                const data = await response.json();
                 
-                if (responseText.includes("Bạn đã đăng kí thành công")) {
+                // Kiểm tra kết quả thành công từ n8n trả về
+                if (data.success === true) {
                     resultDiv.style.backgroundColor = '#e8f8f5';
                     resultDiv.style.color = '#27ae60'; 
                     resultDiv.innerHTML = `
-                        <div>✅ Mã ${maNhanVien}: Đăng kí thành công!</div>
-                        <div class="time-text">🕒 Thời gian: ${fullTime}</div>
+                        <div class="emp-name">👤 ${data.employeeName} (${data.employeeId})</div>
+                        <div>✅ Check-in thành công!</div>
+                        <div class="time-text">🕒 Thời gian: ${data.scanDateTime}</div>
                     `;
                 } else {
                     resultDiv.style.backgroundColor = '#fdedec';
                     resultDiv.style.color = '#c0392b'; 
                     resultDiv.innerHTML = `
-                        <div>❌ Mã ${maNhanVien}: Chưa đăng kí suất cơm!</div>
-                        <div class="time-text">🕒 Thời gian: ${fullTime}</div>
+                        <div>❌ Mã ${maNhanVien}: Bạn chưa đăng kí suất ăn!</div>
+                        <div class="time-text">🕒 Thời gian: ${data.scanDateTime || new Date().toLocaleString()}</div>
                     `;
                 }
 
@@ -197,7 +196,7 @@
                 resultDiv.innerHTML = `<div>❌ Lỗi kết nối hệ thống!</div>`;
             }
 
-            // Xóa trắng ô input và chuẩn bị cho lượt quét tiếp theo ngay lập tức
+            // Xóa trắng ô input và chuẩn bị cho lần quét kế tiếp
             inputField.value = '';
             inputField.focus();
         }
