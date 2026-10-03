@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Xác Nhận Suất Ăn Nhà Máy - Sinaran VN</title>
     <style>
-        * { box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+        }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
@@ -42,6 +44,12 @@
             justify-content: center;
             font-size: 28px;
             box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.4); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(52, 152, 219, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(52, 152, 219, 0); }
         }
         .brand-name {
             font-family: serif;
@@ -112,114 +120,83 @@
 
 <div class="card">
     <div class="header-section">
-        <div class="avatar-icon">👨‍💼</div>
+        <div class="avatar-icon" title="Nhân viên quét mã">👨‍💼</div>
         <div class="brand-name">Sinaran VN</div>
     </div>
 
     <h2>🍽️ Xác Nhận Suất Ăn Nhà Máy</h2>
     
-    <div class="instruction" id="status-load">⏳ Đang tải danh sách đăng ký vào hệ thống...</div>
+    <div class="instruction">Vui lòng quét mã QR nhân viên vào ô bên dưới</div>
 
     <div class="input-group">
-        <input type="text" id="MaNhanVien" placeholder="Chờ quét mã..." autocomplete="off" disabled>
+        <input type="text" id="MaNhanVien" placeholder="Đang chờ quét mã..." autocomplete="off" autofocus>
     </div>
     
     <div id="result" style="background-color: #f1f2f6; color: #7f8c8d;">
-        <span>⚡ Vui lòng đợi tải dữ liệu xong...</span>
+        <span>⚡ Hệ thống sẵn sàng nhận mã quét</span>
     </div>
 </div>
 
 <script>
     const inputField = document.getElementById('MaNhanVien');
     const resultDiv = document.getElementById('result');
-    const statusLoad = document.getElementById('status-load');
-    
-    let localRegisteredList = [];
 
-    // URL Webhook n8n của bạn (Thay đổi đường dẫn webhook lấy danh sách và ghi log cho đúng thực tế)
-    const WEBHOOK_GET_LIST = 'https://driver-encrypt-remake.ngrok-free.dev/webhook/lay-danh-sach'; 
-    const WEBHOOK_LOG_SCAN = 'https://driver-encrypt-remake.ngrok-free.dev/webhook/nhan-suat-an';     
-
-    // 1. Tải toàn bộ danh sách đăng ký về trình duyệt ngay khi mở trang
-    async function loadDataToBrowser() {
-        try {
-            const response = await fetch(WEBHOOK_GET_LIST);
-            const data = await response.json();
-            localRegisteredList = Array.isArray(data) ? data : (data.list || []);
-            
-            // Mở khóa ô nhập để quét mã
-            inputField.disabled = false;
-            inputField.placeholder = "Đang chờ quét mã...";
-            inputField.focus();
-            statusLoad.innerHTML = `✅ Đã tải xong (${localRegisteredList.length} nhân viên đăng ký)`;
-            statusLoad.style.color = '#27ae60';
-            resultDiv.innerHTML = `<span>⚡ Hệ thống sẵn sàng nhận mã quét</span>`;
-        } catch (error) {
-            statusLoad.innerHTML = `❌ Lỗi tải danh sách! Hãy kiểm tra lại kết nối.`;
-            statusLoad.style.color = '#c0392b';
-        }
-    }
-
-    loadDataToBrowser();
-
-    // Giữ focus liên tục vào ô input
+    // Luôn giữ focus vào ô input
     document.addEventListener('click', () => {
-        if(!inputField.disabled) inputField.focus();
+        inputField.focus();
     });
 
-    // 2. So sánh và hiển thị kết quả ngay lập tức khi quét mã
-    inputField.addEventListener('keydown', function(e) {
+    inputField.addEventListener('keydown', async function(e) {
         if (e.key === 'Enter') {
             e.preventDefault();
-            const scannedId = inputField.value.trim().toUpperCase();
-            if (!scannedId) return;
+            const maNhanVien = inputField.value.trim();
+            
+            if (!maNhanVien) return;
 
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
-            const scannedDate = `${year}-${month}-${day}`;
-            const scanTime = now.toLocaleTimeString('vi-VN');
-            const formattedDate = `${day}/${month}/${year}`;
+            // Hiển thị trạng thái đang kiểm tra
+            resultDiv.style.backgroundColor = '#fff3cd';
+            resultDiv.style.color = '#856404';
+            resultDiv.innerHTML = `<span>⏳ Đang kiểm tra mã ${maNhanVien}...</span>`;
 
-            // Tìm kiếm trực tiếp trong bộ nhớ RAM của trình duyệt (Tốc độ cực nhanh ~0.001s)
-            const found = localRegisteredList.find(item => {
-                const row = item.json || item;
-                const sheetId = String(row['Mã NV'] || '').trim().toUpperCase();
-                const sheetDate = String(row['Ngày Nhận'] || '').trim().substring(0, 10);
-                return (sheetId === scannedId) && (sheetDate === scannedDate);
-            });
+            try {
+                const webhookUrl = 'https://driver-encrypt-remake.ngrok-free.dev/webhook/nhan-suat-an';  
 
-            if (found) {
-                const rowData = found.json || found;
-                const empName = rowData['Tên NV'] || 'Nhân viên';
+                const response = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ MaNhanVien: maNhanVien })
+                });
 
-                // Hiển thị ngay lập tức lên màn hình
-                resultDiv.style.backgroundColor = '#e8f8f5';
-                resultDiv.style.color = '#27ae60';
-                resultDiv.innerHTML = `
-                    <div class="emp-name">👤 ${empName} (${scannedId})</div>
-                    <div>✅ Check-in thành công!</div>
-                    <div class="time-text">🕒 Thời gian: ${scanTime} ngày ${formattedDate}</div>
-                `;
-            } else {
-                // Báo lỗi ngay lập tức nếu chưa đăng ký
+                // Đọc dữ liệu JSON trả về từ n8n
+                const data = await response.json();
+                
+                // Kiểm tra kết quả thành công từ n8n trả về
+                if (data.success === true) {
+                    resultDiv.style.backgroundColor = '#e8f8f5';
+                    resultDiv.style.color = '#27ae60'; 
+                    resultDiv.innerHTML = `
+                        <div class="emp-name">👤 ${data.employeeName} (${data.employeeId})</div>
+                        <div>✅ Check-in thành công!</div>
+                        <div class="time-text">🕒 Thời gian: ${data.scanDateTime}</div>
+                    `;
+                } else {
+                    resultDiv.style.backgroundColor = '#fdedec';
+                    resultDiv.style.color = '#c0392b'; 
+                    resultDiv.innerHTML = `
+                        <div>❌ Mã ${maNhanVien}: Bạn chưa đăng kí suất ăn!</div>
+                        <div class="time-text">🕒 Thời gian: ${data.scanDateTime || new Date().toLocaleString()}</div>
+                    `;
+                }
+
+            } catch (error) {
                 resultDiv.style.backgroundColor = '#fdedec';
                 resultDiv.style.color = '#c0392b';
-                resultDiv.innerHTML = `
-                    <div>❌ Mã ${scannedId}: Chưa đăng kí suất cơm!</div>
-                    <div class="time-text">🕒 Thời gian: ${scanTime} ngày ${formattedDate}</div>
-                `;
+                resultDiv.innerHTML = `<div>❌ Lỗi kết nối hệ thống!</div>`;
             }
 
-            // 3. Gửi ngầm dữ liệu lên n8n để ghi vào Google Sheets ở phía sau (Không làm gián đoạn người dùng)
-            fetch(WEBHOOK_LOG_SCAN, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ MaNhanVien: scannedId })
-            }).catch(err => console.log('Lỗi ghi log ngầm:', err));
-
-            // Xóa trắng ô input để sẵn sàng cho lượt quét kế tiếp
+            // Xóa trắng ô input và chuẩn bị cho lần quét kế tiếp
             inputField.value = '';
             inputField.focus();
         }
